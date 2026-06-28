@@ -44,5 +44,8 @@ test("signs up, updates profile name, signs out, and signs back in", async ({
   await page.getByRole("button", { name: "Sign in" }).click();
 
   await expect(page).toHaveURL(/\/dashboard/);
-  await expect(page.getByText("Updated E2E User")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Account settings" })).toBeVisible();
+  await expect(page.locator("[data-slot='card-title']", {
+    hasText: "Updated E2E User",
+  })).toBeVisible();
 });

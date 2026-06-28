@@ -2,25 +2,37 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useState } from "react";
+import { LockKeyhole, Mail } from "lucide-react";
+import { useForm, type SubmitHandler } from "react-hook-form";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { signIn } from "@/lib/auth-client";
 import { getSafeRedirectPath } from "@/lib/safe-redirect";
 import { AuthFormField } from "./auth-form-field";
+import { emailValidation, passwordValidation } from "./auth-form-validation";
+
+interface SignInValues {
+  email: string;
+  password: string;
+}
 
 export function SignInForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const nextPath = getSafeRedirectPath(searchParams.get("next"));
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
+  const {
+    register,
+    handleSubmit,
+    setError,
+    formState: { errors, isSubmitting },
+  } = useForm<SignInValues>({
+    defaultValues: {
+      email: "",
+      password: "",
+    },
+  });
 
-  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setIsLoading(true);
-
+  const onSubmit: SubmitHandler<SignInValues> = async ({ email, password }) => {
     await signIn.email(
       {
         email,
@@ -33,37 +45,44 @@ export function SignInForm() {
           router.refresh();
         },
         onError: (ctx) => {
-          toast.error(ctx.error.message ?? "Unable to sign in");
-          setIsLoading(false);
+          const message = ctx.error.message ?? "Unable to sign in";
+          setError("root", { message });
+          toast.error(message);
         },
       },
     );
-  }
+  };
 
   return (
-    <form onSubmit={handleSubmit} className="flex w-full flex-col gap-5">
+    <form onSubmit={handleSubmit(onSubmit)} className="flex w-full flex-col gap-5">
       <AuthFormField
         id="email"
         label="Email"
         type="email"
-        value={email}
-        onChange={setEmail}
         autoComplete="email"
+        registration={register("email", emailValidation)}
+        error={errors.email?.message}
+        icon={<Mail className="size-4" aria-hidden="true" />}
       />
       <AuthFormField
         id="password"
         label="Password"
         type="password"
-        value={password}
-        onChange={setPassword}
         autoComplete="current-password"
+        registration={register("password", passwordValidation)}
+        error={errors.password?.message}
+        icon={<LockKeyhole className="size-4" aria-hidden="true" />}
       />
 
-      <Button type="submit" disabled={isLoading} className="h-11 w-full">
-        {isLoading ? "Signing in..." : "Sign in"}
+      {errors.root?.message ? (
+        <p className="text-sm text-destructive">{errors.root.message}</p>
+      ) : null}
+
+      <Button type="submit" disabled={isSubmitting} className="h-11 w-full">
+        {isSubmitting ? "Signing in..." : "Sign in"}
       </Button>
 
-      <p className="text-center text-sm text-muted-foreground">
+      <p className="border-t border-border pt-5 text-center text-sm text-muted-foreground">
         No account yet?{" "}
         <Link
           href="/sign-up"
