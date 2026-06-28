@@ -8,7 +8,10 @@ export async function proxy(request: NextRequest) {
 
   if (!session) {
     const signInUrl = new URL("/sign-in", request.url);
-    signInUrl.searchParams.set("next", request.nextUrl.pathname);
+    signInUrl.searchParams.set(
+      "next",
+      `${request.nextUrl.pathname}${request.nextUrl.search}`,
+    );
     return NextResponse.redirect(signInUrl);
   }
 
@@ -16,5 +19,5 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/dashboard", "/private"],
+  matcher: ["/dashboard/:path*", "/private/:path*"],
 };

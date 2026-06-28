@@ -1,0 +1,52 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        ports:
+          - 5432:5432
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: better_next
+        options: >-
+          --health-cmd "pg_isready -U postgres -d better_next"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      BETTER_AUTH_SECRET: ci-secret-ci-secret-ci-secret-ci-secret
+      BETTER_AUTH_URL: http://localhost:3000
+      NEXT_PUBLIC_APP_URL: http://localhost:3000
+      E2E_BASE_URL: http://localhost:3000
+      DATABASE_URL: postgres://postgres:postgres@localhost:5432/better_next?sslmode=disable
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - run: bun install --frozen-lockfile
+
+      - run: bun run db:push
+
+      - run: bun run check
+
+      - run: bun run build
+
+      - run: bunx playwright install --with-deps chromium
+
+      - run: bun run test:e2e

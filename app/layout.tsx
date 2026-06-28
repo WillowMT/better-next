@@ -4,6 +4,7 @@ import { AppToaster } from "@/components/app-toaster";
 import { SiteHeader } from "@/components/site-header";
 import { ThemeProvider } from "@/components/theme-provider";
 import { ThemeScript } from "@/components/theme-script";
+import { appMetadata } from "@/lib/metadata";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -16,10 +17,7 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-export const metadata: Metadata = {
-  title: "better-next",
-  description: "Next.js app with Better Auth",
-};
+export const metadata: Metadata = appMetadata;
 
 export default function RootLayout({
   children,

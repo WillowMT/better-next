@@ -10,6 +10,7 @@ import {
   jsonWithAuthCookies,
   updateAuthUserImage,
 } from "@/lib/update-profile-image";
+import { replaceProfileImage } from "@/lib/profile-image-service";
 
 async function getSession(request: Request) {
   return auth.api.getSession({
@@ -51,16 +52,25 @@ export async function POST(request: Request) {
     }
 
     try {
-      const blob = await uploadProfileImage(session.user.id, file);
+      let authResponse: Response | null = null;
+      const blobUrl = await replaceProfileImage({
+        currentImage: session.user.image,
+        upload: async () => {
+          const blob = await uploadProfileImage(session.user.id, file);
+          return blob.url;
+        },
+        updateUserImage: async (url) => {
+          authResponse = await updateAuthUserImage(request, url);
+        },
+        deleteImage: deleteProfileImage,
+      });
 
-      if (session.user.image) {
-        await deleteProfileImage(session.user.image);
+      if (!authResponse) {
+        throw new Error("Unable to update profile.");
       }
 
-      const authResponse = await updateAuthUserImage(request, blob.url);
-
       return jsonWithAuthCookies(authResponse, {
-        url: blob.url,
+        url: blobUrl,
         storage: "upload",
         fileUploadEnabled: true,
       });

@@ -10,6 +10,16 @@ const allowedImageTypes = new Set([
 ]);
 
 const maxImageSizeBytes = 4 * 1024 * 1024;
+const imageExtensionByType = new Map([
+  ["image/jpeg", "jpg"],
+  ["image/png", "png"],
+  ["image/webp", "webp"],
+  ["image/gif", "gif"],
+]);
+
+interface ValidateImageUrlOptions {
+  allowedHosts?: string[];
+}
 
 export function validateImageFile(file: File) {
   if (!allowedImageTypes.has(file.type)) {
@@ -23,18 +33,96 @@ export function validateImageFile(file: File) {
   return null;
 }
 
-export function validateImageUrl(value: string) {
+export function getAllowedProfileImageHosts() {
+  return (process.env.PROFILE_IMAGE_ALLOWED_HOSTS ?? "")
+    .split(",")
+    .map((host) => host.trim().toLowerCase())
+    .filter(Boolean);
+}
+
+function isPrivateHostname(hostname: string) {
+  const normalized = hostname.toLowerCase();
+
+  if (
+    normalized === "localhost" ||
+    normalized === "::1" ||
+    normalized === "[::1]" ||
+    normalized.endsWith(".localhost")
+  ) {
+    return true;
+  }
+
+  const parts = normalized.split(".").map((part) => Number(part));
+  if (parts.length !== 4 || parts.some((part) => !Number.isInteger(part))) {
+    return false;
+  }
+
+  const [first, second] = parts;
+  return (
+    first === 10 ||
+    first === 127 ||
+    (first === 172 && second >= 16 && second <= 31) ||
+    (first === 192 && second === 168) ||
+    (first === 169 && second === 254)
+  );
+}
+
+function isAllowedHost(hostname: string, allowedHosts: string[]) {
+  if (isPrivateHostname(hostname)) {
+    return false;
+  }
+
+  if (allowedHosts.length === 0) {
+    return true;
+  }
+
+  const normalized = hostname.toLowerCase();
+
+  return allowedHosts.some((host) => {
+    const allowedHost = host.toLowerCase();
+
+    if (allowedHost.startsWith("*.")) {
+      const suffix = allowedHost.slice(1);
+      return normalized.endsWith(suffix);
+    }
+
+    return normalized === allowedHost;
+  });
+}
+
+export function validateImageUrl(
+  value: string,
+  options: ValidateImageUrlOptions = {},
+) {
   try {
     const url = new URL(value);
 
-    if (url.protocol !== "http:" && url.protocol !== "https:") {
-      return "Image URL must use http or https.";
+    if (url.protocol !== "https:") {
+      return "Image URL must use https.";
+    }
+
+    if (url.username || url.password) {
+      return "Image URL must not include credentials.";
+    }
+
+    const allowedHosts = options.allowedHosts ?? getAllowedProfileImageHosts();
+    if (!isAllowedHost(url.hostname, allowedHosts)) {
+      return "Image URL host is not allowed.";
     }
 
     return null;
   } catch {
     return "Enter a valid image URL.";
   }
+}
+
+export function getProfileImageUploadPath(
+  userId: string,
+  file: File,
+  timestamp = Date.now(),
+) {
+  const extension = imageExtensionByType.get(file.type) ?? "jpg";
+  return `avatars/${userId}/${timestamp}.${extension}`;
 }
 
 export async function uploadProfileImage(userId: string, file: File) {
@@ -48,9 +136,8 @@ export async function uploadProfileImage(userId: string, file: File) {
   }
 
   const { put } = await import("@vercel/blob");
-  const extension = file.name.split(".").pop() ?? "jpg";
 
-  return put(`avatars/${userId}/${Date.now()}.${extension}`, file, {
+  return put(getProfileImageUploadPath(userId, file), file, {
     access: "public",
     addRandomSuffix: false,
   });

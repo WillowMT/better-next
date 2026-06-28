@@ -27,6 +27,17 @@ describe("proxy route protection", () => {
     );
   });
 
+  test("preserves protected subpath and query in next redirect param", async () => {
+    const request = new NextRequest("http://localhost/dashboard/settings?tab=profile");
+
+    const response = await proxy(request);
+
+    expect(response.status).toBe(307);
+    expect(response.headers.get("location")).toBe(
+      "http://localhost/sign-in?next=%2Fdashboard%2Fsettings%3Ftab%3Dprofile",
+    );
+  });
+
   test("allows authenticated users through", async () => {
     const session = await createSessionCookie({ name: "Proxy User" });
     const request = new NextRequest("http://localhost/dashboard", {
@@ -40,6 +51,6 @@ describe("proxy route protection", () => {
   });
 
   test("uses a static matcher for protected routes", () => {
-    expect(config.matcher).toEqual(["/dashboard", "/private"]);
+    expect(config.matcher).toEqual(["/dashboard/:path*", "/private/:path*"]);
   });
 });

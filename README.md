@@ -9,6 +9,7 @@ Next.js 16 starter with email/password auth, PostgreSQL, Drizzle ORM, and shadcn
 - **Drizzle ORM** + **PostgreSQL**
 - **Tailwind CSS 4** + **shadcn/ui**
 - **Optional file uploads** via Vercel Blob (URL fallback when not configured)
+- **Playwright E2E** coverage for the auth happy path
 
 ## Quick start
 
@@ -57,6 +58,8 @@ Open [http://localhost:3000](http://localhost:3000).
 | `bun run build` | Production build |
 | `bun run start` | Start production server |
 | `bun test` | Run test suite |
+| `bun run test:e2e` | Run Playwright browser tests |
+| `bun run test:e2e:ui` | Open the Playwright UI |
 | `bun run test:watch` | Tests in watch mode |
 | `bun run lint` | ESLint |
 | `bun run typecheck` | TypeScript check |
@@ -74,6 +77,8 @@ Open [http://localhost:3000](http://localhost:3000).
 | `NEXT_PUBLIC_APP_URL` | Yes* | Client app URL (usually same as above) |
 | `DATABASE_URL` | Yes | PostgreSQL connection string |
 | `BLOB_READ_WRITE_TOKEN` | No | Enables profile photo file uploads |
+| `PROFILE_IMAGE_ALLOWED_HOSTS` | No | Comma-separated allowlist for pasted profile image URL hosts |
+| `AUTH_EMAIL_DELIVERY` | No | Set to `console` to log verification/reset links locally |
 
 \* Falls back to `BETTER_AUTH_URL`, then `http://localhost:3000`.
 
@@ -106,6 +111,8 @@ Two layers:
 
 Sign-in redirect targets are sanitized via `getSafeRedirectPath()` to block open redirects.
 
+Protected subroutes under `/dashboard/*` and `/private/*` are covered by the static proxy matcher.
+
 ## Database notes
 
 Auth tables use **camelCase** column names (`emailVerified`, `createdAt`, etc.) to match Better Auth + Drizzle conventions. If you migrate from a snake_case schema, align `db/schema.ts` with your existing columns.
@@ -119,6 +126,11 @@ Auth tables use **camelCase** column names (`emailVerified`, `createdAt`, etc.) 
 2. `BETTER_AUTH_URL` and `NEXT_PUBLIC_APP_URL` must match your production domain
 3. Run migrations against production: `bun run db:migrate`
 4. Optional: add `BLOB_READ_WRITE_TOKEN` for file uploads
+5. Optional: set `PROFILE_IMAGE_ALLOWED_HOSTS` to the CDN/image hosts you trust
+
+For hosted Postgres URLs using `sslmode=require`, the app normalizes the URL to `sslmode=verify-full` to preserve the current `pg` security behavior explicitly.
+
+`AUTH_EMAIL_DELIVERY=console` is intended for local development only. For production email verification and password reset flows, replace the console sender in `lib/auth-email.ts` with a real mail provider.
 
 Health check: `GET /api/auth/ok` → `{"ok":true}`
 
@@ -129,6 +141,15 @@ bun test
 ```
 
 Integration tests use `.env.local` and a real Postgres database. Use Docker Compose locally or point `DATABASE_URL` at a test database.
+
+Browser tests:
+
+```bash
+bunx playwright install chromium
+bun run test:e2e
+```
+
+Run `bun run db:push` before the first local E2E run. CI does this automatically before launching Playwright.
 
 ## License
 
