@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { signIn } from "@/lib/auth-client";
 import { getSafeRedirectPath } from "@/lib/safe-redirect";
@@ -15,12 +15,10 @@ export function SignInForm() {
   const nextPath = getSafeRedirectPath(searchParams.get("next"));
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setError(null);
     setIsLoading(true);
 
     await signIn.email(
@@ -35,7 +33,7 @@ export function SignInForm() {
           router.refresh();
         },
         onError: (ctx) => {
-          setError(ctx.error.message ?? "Unable to sign in");
+          toast.error(ctx.error.message ?? "Unable to sign in");
           setIsLoading(false);
         },
       },
@@ -60,12 +58,6 @@ export function SignInForm() {
         onChange={setPassword}
         autoComplete="current-password"
       />
-
-      {error ? (
-        <Alert variant="destructive">
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      ) : null}
 
       <Button type="submit" disabled={isLoading} className="h-11 w-full">
         {isLoading ? "Signing in..." : "Sign in"}

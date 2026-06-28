@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -36,8 +36,6 @@ export function ProfileImageForm({
     image,
   );
   const [imageUrl, setImageUrl] = useState(image ?? "");
-  const [error, setError] = useState<string | null>(null);
-  const [message, setMessage] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [isSavingUrl, setIsSavingUrl] = useState(false);
   const [isRemoving, setIsRemoving] = useState(false);
@@ -49,12 +47,10 @@ export function ProfileImageForm({
 
   async function handleFileUpload(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setError(null);
-    setMessage(null);
 
     const file = fileInputRef.current?.files?.[0];
     if (!file) {
-      setError("Choose an image to upload.");
+      toast.error("Choose an image to upload.");
       return;
     }
 
@@ -77,10 +73,10 @@ export function ProfileImageForm({
 
       setPreviewImage(data.url ?? null);
       setImageUrl(data.url ?? "");
-      setMessage("Profile picture updated.");
+      toast.success("Profile picture updated.");
       await refreshSession();
     } catch (uploadError) {
-      setError(
+      toast.error(
         uploadError instanceof Error
           ? uploadError.message
           : "Unable to upload image.",
@@ -95,8 +91,6 @@ export function ProfileImageForm({
 
   async function handleUrlSave(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setError(null);
-    setMessage(null);
     setIsSavingUrl(true);
 
     try {
@@ -115,10 +109,10 @@ export function ProfileImageForm({
       }
 
       setPreviewImage(data.url ?? null);
-      setMessage("Profile picture updated.");
+      toast.success("Profile picture updated.");
       await refreshSession();
     } catch (saveError) {
-      setError(
+      toast.error(
         saveError instanceof Error
           ? saveError.message
           : "Unable to save image URL.",
@@ -129,8 +123,6 @@ export function ProfileImageForm({
   }
 
   async function handleRemove() {
-    setError(null);
-    setMessage(null);
     setIsRemoving(true);
 
     try {
@@ -146,10 +138,10 @@ export function ProfileImageForm({
 
       setPreviewImage(null);
       setImageUrl("");
-      setMessage("Profile picture removed.");
+      toast.success("Profile picture removed.");
       await refreshSession();
     } catch (removeError) {
-      setError(
+      toast.error(
         removeError instanceof Error
           ? removeError.message
           : "Unable to remove profile picture.",
@@ -219,18 +211,6 @@ export function ProfileImageForm({
               >
                 {isRemoving ? "Removing..." : "Remove profile picture"}
               </Button>
-            ) : null}
-
-            {error ? (
-              <Alert variant="destructive">
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
-            ) : null}
-
-            {message ? (
-              <Alert>
-                <AlertDescription>{message}</AlertDescription>
-              </Alert>
             ) : null}
           </div>
         </div>

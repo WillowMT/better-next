@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { signUp } from "@/lib/auth-client";
 import { AuthFormField } from "./auth-form-field";
@@ -13,12 +13,10 @@ export function SignUpForm() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setError(null);
     setIsLoading(true);
 
     await signUp.email(
@@ -34,7 +32,7 @@ export function SignUpForm() {
           router.refresh();
         },
         onError: (ctx) => {
-          setError(ctx.error.message ?? "Unable to create account");
+          toast.error(ctx.error.message ?? "Unable to create account");
           setIsLoading(false);
         },
       },
@@ -66,12 +64,6 @@ export function SignUpForm() {
         onChange={setPassword}
         autoComplete="new-password"
       />
-
-      {error ? (
-        <Alert variant="destructive">
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      ) : null}
 
       <Button type="submit" disabled={isLoading} className="h-11 w-full">
         {isLoading ? "Creating account..." : "Create account"}
