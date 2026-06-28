@@ -34,7 +34,7 @@ export default function RootLayout({
       <head>
         <ThemeScript />
       </head>
-      <body className="flex min-h-full flex-col bg-zinc-50 font-sans text-zinc-900 dark:bg-zinc-950 dark:text-zinc-50">
+      <body className="flex min-h-full flex-col bg-background font-sans text-foreground">
         <ThemeProvider>
           <SiteHeader />
           {children}

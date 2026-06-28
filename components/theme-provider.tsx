@@ -6,7 +6,7 @@ import {
   useContext,
   useEffect,
   useMemo,
-  useState,
+  useSyncExternalStore,
 } from "react";
 import {
   applyTheme,
@@ -25,44 +25,56 @@ interface ThemeContextValue {
 
 const ThemeContext = createContext<ThemeContextValue | null>(null);
 
+function subscribeToTheme(onStoreChange: () => void) {
+  const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
+
+  function handleChange() {
+    onStoreChange();
+  }
+
+  window.addEventListener("storage", handleChange);
+  mediaQuery.addEventListener("change", handleChange);
+
+  return () => {
+    window.removeEventListener("storage", handleChange);
+    mediaQuery.removeEventListener("change", handleChange);
+  };
+}
+
+function getThemeSnapshot(): Theme {
+  return readStoredTheme();
+}
+
+function getResolvedThemeSnapshot(): "light" | "dark" {
+  return resolveTheme(readStoredTheme());
+}
+
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setThemeState] = useState<Theme>("system");
-  const [resolvedTheme, setResolvedTheme] = useState<"light" | "dark">("light");
+  const theme = useSyncExternalStore(
+    subscribeToTheme,
+    getThemeSnapshot,
+    () => "system" as Theme,
+  );
+  const resolvedTheme = useSyncExternalStore(
+    subscribeToTheme,
+    getResolvedThemeSnapshot,
+    () => "light" as const,
+  );
+
+  useEffect(() => {
+    applyTheme(theme);
+  }, [theme]);
 
   const setTheme = useCallback((nextTheme: Theme) => {
     storeTheme(nextTheme);
     applyTheme(nextTheme);
-    setThemeState(nextTheme);
-    setResolvedTheme(resolveTheme(nextTheme));
+    window.dispatchEvent(new Event("storage"));
   }, []);
 
   const toggleTheme = useCallback(() => {
-    const nextTheme = resolveTheme(theme) === "dark" ? "light" : "dark";
+    const nextTheme = resolvedTheme === "dark" ? "light" : "dark";
     setTheme(nextTheme);
-  }, [setTheme, theme]);
-
-  useEffect(() => {
-    const storedTheme = readStoredTheme();
-    applyTheme(storedTheme);
-    setThemeState(storedTheme);
-    setResolvedTheme(resolveTheme(storedTheme));
-  }, []);
-
-  useEffect(() => {
-    if (theme !== "system") {
-      return;
-    }
-
-    const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
-
-    function handleChange() {
-      applyTheme("system");
-      setResolvedTheme(resolveTheme("system"));
-    }
-
-    mediaQuery.addEventListener("change", handleChange);
-    return () => mediaQuery.removeEventListener("change", handleChange);
-  }, [theme]);
+  }, [resolvedTheme, setTheme]);
 
   const value = useMemo(
     () => ({

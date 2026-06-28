@@ -2,7 +2,10 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { Button, buttonVariants } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import { signOut, useSession } from "@/lib/auth-client";
+import { cn } from "@/lib/utils";
 import { UserAvatar } from "./user-avatar";
 
 export function UserMenu() {
@@ -10,9 +13,7 @@ export function UserMenu() {
   const { data: session, isPending } = useSession();
 
   if (isPending) {
-    return (
-      <div className="h-9 w-24 animate-pulse rounded-full bg-zinc-200 dark:bg-zinc-800" />
-    );
+    return <Skeleton className="h-9 w-24 rounded-full" />;
   }
 
   if (!session) {
@@ -20,13 +21,13 @@ export function UserMenu() {
       <div className="flex items-center gap-2">
         <Link
           href="/sign-in"
-          className="rounded-full px-4 py-2 text-sm font-medium text-zinc-700 transition hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-900"
+          className={cn(buttonVariants({ variant: "ghost", size: "sm" }), "rounded-full")}
         >
           Sign in
         </Link>
         <Link
           href="/sign-up"
-          className="rounded-full bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
+          className={cn(buttonVariants({ size: "sm" }), "rounded-full")}
         >
           Sign up
         </Link>
@@ -38,7 +39,7 @@ export function UserMenu() {
     <div className="flex items-center gap-3">
       <Link
         href="/dashboard"
-        className="flex items-center gap-2 text-sm text-zinc-600 transition hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
+        className="flex items-center gap-2 text-sm text-muted-foreground transition hover:text-foreground"
       >
         <UserAvatar
           name={session.user.name}
@@ -47,8 +48,11 @@ export function UserMenu() {
         />
         <span className="hidden sm:inline">{session.user.name}</span>
       </Link>
-      <button
+      <Button
         type="button"
+        variant="outline"
+        size="sm"
+        className="rounded-full"
         onClick={async () => {
           await signOut({
             fetchOptions: {
@@ -59,10 +63,9 @@ export function UserMenu() {
             },
           });
         }}
-        className="rounded-full border border-zinc-200 px-4 py-2 text-sm font-medium text-zinc-700 transition hover:bg-zinc-100 dark:border-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-900"
       >
         Sign out
-      </button>
+      </Button>
     </div>
   );
 }

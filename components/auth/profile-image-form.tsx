@@ -2,6 +2,17 @@
 
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { useSession } from "@/lib/auth-client";
 import { UserAvatar } from "./user-avatar";
 
@@ -149,96 +160,81 @@ export function ProfileImageForm({
   }
 
   return (
-    <div className="rounded-2xl border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-950">
-      <div className="flex flex-col gap-6 sm:flex-row sm:items-start">
-        <UserAvatar name={name} image={previewImage} size="lg" />
+    <Card>
+      <CardContent className="pt-6">
+        <div className="flex flex-col gap-6 sm:flex-row sm:items-start">
+          <UserAvatar name={name} image={previewImage} size="lg" />
 
-        <div className="flex-1 space-y-6">
-          <div className="space-y-1">
-            <h2 className="text-lg font-medium text-zinc-900 dark:text-zinc-50">
-              {name}
-            </h2>
-            <p className="text-sm text-zinc-600 dark:text-zinc-400">{email}</p>
-            <p className="pt-2 text-sm text-zinc-500 dark:text-zinc-400">
-              {fileUploadEnabled
-                ? "Upload a photo or paste a public image URL."
-                : "Paste a public image URL to set your profile picture."}
-            </p>
-          </div>
+          <div className="flex-1 space-y-6">
+            <CardHeader className="p-0">
+              <CardTitle>{name}</CardTitle>
+              <CardDescription>{email}</CardDescription>
+              <CardDescription className="pt-2">
+                {fileUploadEnabled
+                  ? "Upload a photo or paste a public image URL."
+                  : "Paste a public image URL to set your profile picture."}
+              </CardDescription>
+            </CardHeader>
 
-          {fileUploadEnabled ? (
-            <form onSubmit={handleFileUpload} className="space-y-3">
-              <label
-                htmlFor="profile-image-file"
-                className="text-sm font-medium text-zinc-700 dark:text-zinc-300"
-              >
-                Upload image
-              </label>
-              <input
-                ref={fileInputRef}
-                id="profile-image-file"
-                type="file"
-                accept="image/jpeg,image/png,image/webp,image/gif"
-                className="block w-full text-sm text-zinc-600 file:mr-4 file:rounded-lg file:border-0 file:bg-zinc-100 file:px-4 file:py-2 file:text-sm file:font-medium file:text-zinc-800 hover:file:bg-zinc-200 dark:text-zinc-400 dark:file:bg-zinc-900 dark:file:text-zinc-100 dark:hover:file:bg-zinc-800"
+            {fileUploadEnabled ? (
+              <form onSubmit={handleFileUpload} className="space-y-3">
+                <Label htmlFor="profile-image-file">Upload image</Label>
+                <Input
+                  ref={fileInputRef}
+                  id="profile-image-file"
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp,image/gif"
+                  className="h-auto file:mr-4 file:rounded-lg file:border-0 file:bg-muted file:px-4 file:py-2 file:text-sm file:font-medium file:text-foreground"
+                />
+                <Button type="submit" disabled={isUploading}>
+                  {isUploading ? "Uploading..." : "Upload photo"}
+                </Button>
+              </form>
+            ) : null}
+
+            <form onSubmit={handleUrlSave} className="space-y-3">
+              <Label htmlFor="profile-image-url">
+                {fileUploadEnabled ? "Or use an image URL" : "Image URL"}
+              </Label>
+              <Input
+                id="profile-image-url"
+                type="url"
+                value={imageUrl}
+                onChange={(event) => setImageUrl(event.target.value)}
+                placeholder="https://example.com/avatar.jpg"
+                className="h-11"
               />
-              <button
-                type="submit"
-                disabled={isUploading}
-                className="h-10 rounded-lg bg-zinc-900 px-4 text-sm font-medium text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
-              >
-                {isUploading ? "Uploading..." : "Upload photo"}
-              </button>
+              <Button type="submit" variant="outline" disabled={isSavingUrl}>
+                {isSavingUrl ? "Saving..." : "Save image URL"}
+              </Button>
             </form>
-          ) : null}
 
-          <form onSubmit={handleUrlSave} className="space-y-3">
-            <label
-              htmlFor="profile-image-url"
-              className="text-sm font-medium text-zinc-700 dark:text-zinc-300"
-            >
-              {fileUploadEnabled ? "Or use an image URL" : "Image URL"}
-            </label>
-            <input
-              id="profile-image-url"
-              type="url"
-              value={imageUrl}
-              onChange={(event) => setImageUrl(event.target.value)}
-              placeholder="https://example.com/avatar.jpg"
-              className="h-11 w-full rounded-lg border border-zinc-200 bg-white px-3 text-sm text-zinc-900 outline-none transition focus:border-zinc-400 focus:ring-2 focus:ring-zinc-200 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-50 dark:focus:border-zinc-600 dark:focus:ring-zinc-800"
-            />
-            <button
-              type="submit"
-              disabled={isSavingUrl}
-              className="h-10 rounded-lg border border-zinc-200 px-4 text-sm font-medium text-zinc-700 transition hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-60 dark:border-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-900"
-            >
-              {isSavingUrl ? "Saving..." : "Save image URL"}
-            </button>
-          </form>
+            {previewImage ? (
+              <Button
+                type="button"
+                variant="destructive"
+                size="sm"
+                onClick={handleRemove}
+                disabled={isRemoving}
+              >
+                {isRemoving ? "Removing..." : "Remove profile picture"}
+              </Button>
+            ) : null}
 
-          {previewImage ? (
-            <button
-              type="button"
-              onClick={handleRemove}
-              disabled={isRemoving}
-              className="text-sm font-medium text-red-600 transition hover:text-red-700 disabled:opacity-60 dark:text-red-400 dark:hover:text-red-300"
-            >
-              {isRemoving ? "Removing..." : "Remove profile picture"}
-            </button>
-          ) : null}
+            {error ? (
+              <Alert variant="destructive">
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            ) : null}
 
-          {error ? (
-            <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300">
-              {error}
-            </p>
-          ) : null}
-
-          {message ? (
-            <p className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-300">
-              {message}
-            </p>
-          ) : null}
+            {message ? (
+              <Alert>
+                <AlertDescription>{message}</AlertDescription>
+              </Alert>
+            ) : null}
+          </div>
         </div>
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   );
 }

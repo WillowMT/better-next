@@ -1,6 +1,8 @@
 import { describe, expect, test } from "bun:test";
 import {
+  deleteProfileImage,
   isBlobStorageEnabled,
+  uploadProfileImage,
   validateImageFile,
   validateImageUrl,
 } from "@/lib/blob";
@@ -26,10 +28,28 @@ describe("blob helpers", () => {
     );
   });
 
-  test("validateImageFile accepts supported image types", () => {
-    const file = new File(["test"], "avatar.png", { type: "image/png" });
+  test("validateImageFile rejects files larger than 4 MB", () => {
+    const largePayload = new Uint8Array(4 * 1024 * 1024 + 1);
+    const file = new File([largePayload], "avatar.png", {
+      type: "image/png",
+    });
 
-    expect(validateImageFile(file)).toBeNull();
+    expect(validateImageFile(file)).toBe("Image must be 4 MB or smaller.");
+  });
+
+  test("validateImageFile accepts supported image types", () => {
+    expect(
+      validateImageFile(new File(["test"], "avatar.png", { type: "image/png" })),
+    ).toBeNull();
+    expect(
+      validateImageFile(new File(["test"], "avatar.jpg", { type: "image/jpeg" })),
+    ).toBeNull();
+    expect(
+      validateImageFile(new File(["test"], "avatar.webp", { type: "image/webp" })),
+    ).toBeNull();
+    expect(
+      validateImageFile(new File(["test"], "avatar.gif", { type: "image/gif" })),
+    ).toBeNull();
   });
 
   test("validateImageUrl accepts http and https URLs", () => {
@@ -42,5 +62,37 @@ describe("blob helpers", () => {
     expect(validateImageUrl("ftp://example.com/avatar.jpg")).toBe(
       "Image URL must use http or https.",
     );
+    expect(validateImageUrl("")).toBe("Enter a valid image URL.");
+  });
+
+  test("uploadProfileImage throws when blob storage is disabled", async () => {
+    const originalToken = process.env.BLOB_READ_WRITE_TOKEN;
+    process.env.BLOB_READ_WRITE_TOKEN = "";
+
+    await expect(
+      uploadProfileImage(
+        "user-123",
+        new File(["test"], "avatar.png", { type: "image/png" }),
+      ),
+    ).rejects.toThrow("File uploads are not configured.");
+
+    process.env.BLOB_READ_WRITE_TOKEN = originalToken;
+  });
+
+  test("deleteProfileImage no-ops for non-blob URLs", async () => {
+    await expect(
+      deleteProfileImage("https://example.com/avatar.jpg"),
+    ).resolves.toBeUndefined();
+  });
+
+  test("deleteProfileImage no-ops when blob storage is disabled", async () => {
+    const originalToken = process.env.BLOB_READ_WRITE_TOKEN;
+    process.env.BLOB_READ_WRITE_TOKEN = "";
+
+    await expect(
+      deleteProfileImage("https://abc.public.blob.vercel-storage.com/avatar.png"),
+    ).resolves.toBeUndefined();
+
+    process.env.BLOB_READ_WRITE_TOKEN = originalToken;
   });
 });

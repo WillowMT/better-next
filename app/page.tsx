@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { TechStack } from "@/components/tech-stack";
+import { buttonVariants } from "@/components/ui/button";
 import { auth } from "@/lib/auth";
+import { cn } from "@/lib/utils";
 import { headers } from "next/headers";
 
 export default async function Home() {
@@ -11,15 +13,15 @@ export default async function Home() {
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col justify-center gap-12 px-6 py-16">
       <div className="space-y-4">
-        <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400">
+        <p className="text-sm font-medium text-muted-foreground">
           Better Auth + Next.js
         </p>
-        <h1 className="max-w-xl text-4xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
+        <h1 className="max-w-xl text-4xl font-semibold tracking-tight">
           {session
             ? `You're signed in as ${session.user.name}.`
             : "Email and password auth, ready to go."}
         </h1>
-        <p className="max-w-lg text-lg leading-8 text-zinc-600 dark:text-zinc-400">
+        <p className="max-w-lg text-lg leading-8 text-muted-foreground">
           {session
             ? "Head to your dashboard to view session details."
             : "Create an account or sign in to try the full auth flow."}
@@ -30,7 +32,7 @@ export default async function Home() {
         {session ? (
           <Link
             href="/dashboard"
-            className="inline-flex h-11 items-center justify-center rounded-full bg-zinc-900 px-6 text-sm font-medium text-white transition hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
+            className={cn(buttonVariants({ size: "lg" }), "rounded-full px-6")}
           >
             Go to dashboard
           </Link>
@@ -38,13 +40,16 @@ export default async function Home() {
           <>
             <Link
               href="/sign-up"
-              className="inline-flex h-11 items-center justify-center rounded-full bg-zinc-900 px-6 text-sm font-medium text-white transition hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
+              className={cn(buttonVariants({ size: "lg" }), "rounded-full px-6")}
             >
               Create account
             </Link>
             <Link
               href="/sign-in"
-              className="inline-flex h-11 items-center justify-center rounded-full border border-zinc-200 px-6 text-sm font-medium text-zinc-700 transition hover:bg-zinc-100 dark:border-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-900"
+              className={cn(
+                buttonVariants({ variant: "outline", size: "lg" }),
+                "rounded-full px-6",
+              )}
             >
               Sign in
             </Link>
